@@ -132,12 +132,17 @@ const FAQPage: React.FC = () => {
 
   const toggleFAQ = (categoryTitle: string, question: string) => {
     const key = `${categoryTitle}-${question}`;
-    setOpenItems(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
+    console.log('Toggling FAQ:', key, 'Current state:', openItems[key]);
+    console.log('Click event fired for:', question);
+    setOpenItems(prev => {
+      const newState = !(prev[key] || false);
+      console.log('Setting new state for', key, 'to:', newState);
+      return {
+        ...prev,
+        [key]: newState
+      };
+    });
   };
-
 
   const toggleCategory = (categoryTitle: string) => {
     setActiveCategory(activeCategory === categoryTitle ? null : categoryTitle);
@@ -268,7 +273,7 @@ const FAQPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: categoryIndex * 0.1 }}
-                className="card-glow p-8"
+                className="bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-8"
               >
                 <div className="flex items-center gap-4 mb-8">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500/20 to-blue-500/20 flex items-center justify-center text-2xl">
@@ -283,52 +288,39 @@ const FAQPage: React.FC = () => {
                 <div className="space-y-4">
                   {category.items.map((item, itemIndex) => {
                     const key = `${category.title}-${item.question}`;
-                    const isOpen = openItems[key];
+                    const isOpen = !!openItems[key]; // Convert undefined to false
                     
                     return (
-                      <motion.div
+                      <div
                         key={itemIndex}
-                        className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden"
-                        whileHover={{ borderColor: 'rgba(52, 211, 153, 0.3)' }}
+                        className="bg-gray-800/30 rounded-lg border border-gray-700/50 hover:border-emerald-400/30 transition-colors duration-200"
                       >
-                        <button
+                        <div 
                           onClick={() => toggleFAQ(category.title, item.question)}
-                          className="w-full p-6 flex items-center justify-between text-left"
+                          className="w-full p-6 flex items-center justify-between text-left cursor-pointer hover:bg-gray-700/20 transition-colors duration-200"
                         >
                           <h3 className="text-lg font-semibold text-white pr-8">
                             {item.question}
                           </h3>
-                          <motion.div
-                            animate={{ rotate: isOpen ? 180 : 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center text-emerald-400 flex-shrink-0"
+                          <div
+                            className={`w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center text-emerald-400 flex-shrink-0 hover:bg-gray-600/50 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
-                          </motion.div>
-                        </button>
+                          </div>
+                        </div>
 
-                        <AnimatePresence>
-                          {isOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-6 pb-6">
-                                <div className="pt-4 border-t border-gray-700/50">
-                                  <p className="text-gray-300 leading-relaxed">
-                                    {item.answer}
-                                  </p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
+                        {isOpen && (
+                          <div className="px-6 pb-6">
+                            <div className="pt-4 border-t border-gray-700/50">
+                              <p className="text-gray-300 leading-relaxed">
+                                {item.answer}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
 
