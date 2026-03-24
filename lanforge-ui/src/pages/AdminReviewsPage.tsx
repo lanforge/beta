@@ -1,0 +1,200 @@
+import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
+
+interface Review {
+  _id: string;
+  userName: string;
+  rating: number;
+  title: string;
+  comment: string;
+  isApproved: boolean;
+  createdAt: string;
+  product?: { name: string };
+  pcPart?: { name: string };
+  accessory?: { name: string };
+}
+
+const AdminReviewsPage: React.FC = () => {
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalReviews, setTotalReviews] = useState(0);
+
+  const fetchReviews = async () => {
+    setIsLoading(true);
+    try {
+      const params: any = { page, limit: 20 };
+      if (statusFilter === 'approved') params.isApproved = 'true';
+      if (statusFilter === 'pending') params.isApproved = 'false';
+
+      const response = await api.get('/reviews/admin/all', { params });
+      setReviews(response.data.reviews || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalReviews(response.data.total || 0);
+    } catch (error) {
+      console.error('Failed to fetch reviews', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, [page, statusFilter]);
+
+  const toggleApproval = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.put(`/reviews/${id}/approve`, { isApproved: !currentStatus });
+      fetchReviews();
+    } catch (error) {
+      console.error('Failed to update review status', error);
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <svg key={i} className={`w-4 h-4 ${i < rating ? 'text-amber-400' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    ));
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Product Reviews</h1>
+          <p className="text-gray-400 mt-1">Moderate customer reviews and feedback</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Total Reviews</p>
+              <p className="text-2xl font-bold text-white mt-1">{totalReviews}</p>
+            </div>
+            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="card p-4">
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center space-x-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="input px-3 py-2 bg-gray-900/70 border-gray-700 text-sm rounded-lg"
+              >
+                <option value="all">All Reviews</option>
+                <option value="pending">Pending Approval</option>
+                <option value="approved">Approved</option>
+              </select>
+              <button 
+                onClick={fetchReviews}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg py-2 font-medium transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reviews table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-800 bg-gray-900/50">
+                <th className="py-3 px-4 text-left text-gray-400 font-medium text-sm">Rating / Item</th>
+                <th className="py-3 px-4 text-left text-gray-400 font-medium text-sm">Customer</th>
+                <th className="py-3 px-4 text-left text-gray-400 font-medium text-sm">Review</th>
+                <th className="py-3 px-4 text-center text-gray-400 font-medium text-sm">Date</th>
+                <th className="py-3 px-4 text-center text-gray-400 font-medium text-sm">Status</th>
+                <th className="py-3 px-4 text-right text-gray-400 font-medium text-sm">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {isLoading ? (
+                <tr><td colSpan={6} className="p-6 text-center text-gray-500">Loading reviews...</td></tr>
+              ) : reviews.length === 0 ? (
+                <tr><td colSpan={6} className="p-6 text-center text-gray-500">No reviews found</td></tr>
+              ) : (
+                reviews.map(review => (
+                  <tr key={review._id} className="hover:bg-gray-800/30">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-1 mb-1">
+                        {renderStars(review.rating)}
+                      </div>
+                      <p className="text-gray-400 text-xs truncate max-w-[200px]">
+                        {review.product?.name || review.pcPart?.name || review.accessory?.name || 'Unknown Item'}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4 text-white font-medium">{review.userName}</td>
+                    <td className="py-3 px-4">
+                      <p className="text-white font-medium text-sm">{review.title}</p>
+                      <p className="text-gray-400 text-xs truncate max-w-[300px]">{review.comment}</p>
+                    </td>
+                    <td className="py-3 px-4 text-gray-400 text-center text-sm">
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${review.isApproved ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                        {review.isApproved ? 'Approved' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button 
+                        onClick={() => toggleApproval(review._id, review.isApproved)}
+                        className={`px-3 py-1.5 text-sm rounded-lg transition-colors border ${review.isApproved ? 'bg-gray-800 border-gray-700 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-gray-300' : 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent'}`}
+                      >
+                        {review.isApproved ? 'Revoke' : 'Approve'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Pagination */}
+        <div className="p-4 border-t border-gray-800 flex items-center justify-between">
+          <div className="text-gray-400 text-sm">
+            Showing {reviews.length > 0 ? (page - 1) * 20 + 1 : 0} to {Math.min(page * 20, totalReviews)} of {totalReviews}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+              className="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-gray-400 px-2">Page {page} of {totalPages || 1}</span>
+            <button 
+              disabled={page === totalPages || totalPages === 0}
+              onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminReviewsPage;
