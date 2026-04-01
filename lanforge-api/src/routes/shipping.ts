@@ -41,17 +41,17 @@ router.post(
       // Revert to shipments.create as live-rates consistently returns 0
       // using the exact dimensions matching user curl examples
       const parcels = [{
-        length: '10',
-        width: '10',
-        height: '10',
+        length: '24',
+        width: '16',
+        height: '25',
         distanceUnit: 'in',
-        weight: '1',
+        weight: '50',
         massUnit: 'lb'
       }];
-      
-      const shipment = await createShipment(
-        { ...defaultLineItems[0], name: 'LANForge Shipping', street1: '123 Tech Lane', city: 'Silicon Valley', state: 'CA', zip: '94025', country: 'US' }, 
-        addressTo, 
+
+      const shipment: any = await createShipment(
+        { ...defaultLineItems[0], name: 'LANForge', street1: '88 Sabal Creek Trl', city: 'Ponte Vedra', state: 'FL', zip: '32081', country: 'US' },
+        addressTo,
         parcels
       );
       const rates = shipment.rates || [];
@@ -61,11 +61,48 @@ router.post(
       const markupPercentage = markupSetting && typeof markupSetting.value === 'number' ? markupSetting.value : 20;
       const markupMultiplier = 1 + (markupPercentage / 100);
 
-      const markedUpRates = rates.map((rate: any, index: number) => ({
+      const rateCategories = new Map<string, any>();
+
+      for (const rate of rates) {
+        let displayTitle = '';
+        let estimatedDays = rate.estimated_days;
+        const nameToMatch = (rate.title || rate.servicelevel?.name || '').toLowerCase();
+
+        if (nameToMatch.includes('ground')) {
+          displayTitle = 'Ground';
+          estimatedDays = '3-5';
+        } else if (nameToMatch.includes('2nd day') || nameToMatch.includes('2 day')) {
+          displayTitle = '2 Day Air';
+          estimatedDays = '2';
+        } else if (nameToMatch.includes('next day')) {
+          displayTitle = 'Next Day Air';
+          estimatedDays = '1';
+        } else {
+          continue; // Filter out other methods
+        }
+
+        const currentAmount = parseFloat(rate.amount);
+        const existingRate = rateCategories.get(displayTitle);
+
+        // Keep the cheapest rate for each category if there are duplicates
+        if (!existingRate || parseFloat(existingRate.amount) > currentAmount) {
+          rateCategories.set(displayTitle, {
+            ...rate,
+            objectId: rate.object_id || rate.objectId || rate.title || `live_rate_${rateCategories.size}`,
+            title: displayTitle,
+            estimatedDays,
+            amount: currentAmount
+          });
+        }
+      }
+
+      const markedUpRates = Array.from(rateCategories.values()).map(rate => ({
         ...rate,
-        objectId: rate.title || `live_rate_${index}`, // Live Rates endpoint does not provide objectId natively
-        amount: (parseFloat(rate.amount) * markupMultiplier).toFixed(2)
+        amount: (rate.amount * markupMultiplier).toFixed(2)
       }));
+
+      // Sort by amount ascending
+      markedUpRates.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
 
       res.json({ rates: markedUpRates });
     } catch (error: any) {
