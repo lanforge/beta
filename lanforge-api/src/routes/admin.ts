@@ -373,9 +373,10 @@ router.get('/users', protect, adminOnly, async (req: AuthRequest, res: Response)
     const filter: any = {};
     if (role && role !== 'all') filter.role = role;
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: escapedSearch, $options: 'i' } },
+        { email: { $regex: escapedSearch, $options: 'i' } },
       ];
     }
 
@@ -398,7 +399,11 @@ router.post(
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+      .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
     body('role').isIn(['admin', 'staff']).withMessage('Role must be admin or staff'),
   ],
   async (req: AuthRequest, res: Response): Promise<void> => {
@@ -525,8 +530,9 @@ router.post(
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { newPassword } = req.body;
-      if (!newPassword || newPassword.length < 8) {
-        res.status(400).json({ message: 'Password must be at least 8 characters' });
+      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!newPassword || !passRegex.test(newPassword)) {
+        res.status(400).json({ message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character' });
         return;
       }
 
@@ -717,7 +723,9 @@ router.post(
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword')
       .isLength({ min: 8 })
-      .withMessage('New password must be at least 8 characters'),
+      .withMessage('New password must be at least 8 characters')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+      .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   ],
   async (req: AuthRequest, res: Response): Promise<void> => {
     const errors = validationResult(req);

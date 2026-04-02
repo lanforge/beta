@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User';
+import AuditLog from '../models/AuditLog';
 import { protect, AuthRequest } from '../middleware/auth';
 import { sendPasswordReset } from '../services/emailService';
 
@@ -103,6 +104,17 @@ router.post(
       try {
         // Send plain token in email, not hashed token
         await sendPasswordReset(user.name, user.email, resetToken);
+        
+        await AuditLog.create({
+          userId: user._id,
+          userEmail: user.email,
+          action: 'forgot_password_request',
+          resource: 'user',
+          resourceId: String(user._id),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          status: 'success',
+        });
       } catch (e) {
         console.error('Password reset email failed:', e);
         user.resetPasswordToken = undefined;

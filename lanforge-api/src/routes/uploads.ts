@@ -5,6 +5,25 @@ import crypto from 'crypto';
 import { Storage } from '@google-cloud/storage';
 import { protect, staffOrAdmin, AuthRequest } from '../middleware/auth';
 
+// Helper to check magic bytes for common image formats
+const isValidImageMagicBytes = (buffer: Buffer): boolean => {
+  if (buffer.length < 4) return false;
+  
+  const hex = buffer.toString('hex', 0, 4);
+  // JPEG: ffd8ffe0, ffd8ffe1, ffd8ffe2, ffd8ffe3, ffd8ffe8
+  if (hex.startsWith('ffd8ff')) return true;
+  // PNG: 89504e47
+  if (hex === '89504e47') return true;
+  // GIF: 47494638
+  if (hex === '47494638') return true;
+  // WEBP: 52494646 (RIFF) ... 57454250 (WEBP)
+  if (hex === '52494646' && buffer.toString('hex', 8, 12) === '57454250') return true;
+
+  return false;
+};
+
+const ALLOWED_FOLDERS = ['products', 'users', 'misc', 'builds', 'reviews', 'accessories'];
+
 const router = Router();
 
 // Configure Google Cloud Storage explicitly (no local fallback)
@@ -65,8 +84,15 @@ router.post('/image', protect, staffOrAdmin, upload.single('image'), async (req:
       res.status(400).json({ message: 'No file uploaded' });
       return;
     }
+
+    if (!isValidImageMagicBytes(req.file.buffer)) {
+      res.status(400).json({ message: 'Invalid file format (magic bytes mismatch)' });
+      return;
+    }
     
-    const folder = typeof req.body.folder === 'string' ? req.body.folder : 'misc';
+    const reqFolder = typeof req.body.folder === 'string' ? req.body.folder.toLowerCase() : 'misc';
+    const folder = ALLOWED_FOLDERS.includes(reqFolder) ? reqFolder : 'misc';
+    
     const url = await uploadBufferToGCS(req.file.buffer, req.file.originalname, req.file.mimetype, folder);
     
     res.json({ url });
@@ -82,10 +108,20 @@ router.post('/images', protect, staffOrAdmin, upload.array('images', 10), async 
       res.status(400).json({ message: 'No files uploaded' });
       return;
     }
+
+    const files = req.files as Express.Multer.File[];
+    for (const f of files) {
+      if (!isValidImageMagicBytes(f.buffer)) {
+        res.status(400).json({ message: `Invalid file format for ${f.originalname}` });
+        return;
+      }
+    }
     
-    const folder = typeof req.body.folder === 'string' ? req.body.folder : 'misc';
+    const reqFolder = typeof req.body.folder === 'string' ? req.body.folder.toLowerCase() : 'misc';
+    const folder = ALLOWED_FOLDERS.includes(reqFolder) ? reqFolder : 'misc';
+    
     const urls = await Promise.all(
-      (req.files as Express.Multer.File[]).map((f) => 
+      files.map((f) => 
         uploadBufferToGCS(f.buffer, f.originalname, f.mimetype, folder)
       )
     );

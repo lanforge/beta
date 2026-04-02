@@ -93,6 +93,22 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login', authLimiter);
 
+// Strict rate limit for password resets
+const resetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 requests per hour
+  message: 'Too many password reset attempts, please try again later.',
+});
+app.use('/api/auth/forgot-password', resetLimiter);
+
+// Strict rate limit for token refreshes
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 refresh requests per 15 minutes
+  message: 'Too many refresh token attempts, please try again later.',
+});
+app.use('/api/auth/refresh', refreshLimiter);
+
 // Raw body for Stripe webhook (must come before express.json)
 app.use('/api/payments/webhook/stripe', express.raw({ type: 'application/json' }));
 

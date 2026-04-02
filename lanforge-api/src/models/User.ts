@@ -20,7 +20,18 @@ const UserSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 8 },
+    password: { 
+      type: String, 
+      required: true, 
+      validate: {
+        validator: function(v: string) {
+          // If the password is already hashed (starts with $2), skip validation
+          if (v.startsWith('$2a$') || v.startsWith('$2b$') || v.startsWith('$2y$')) return true;
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v);
+        },
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+      }
+    },
     role: { type: String, enum: ['admin', 'staff'], required: true },
     avatar: { type: String },
     isActive: { type: Boolean, default: true },

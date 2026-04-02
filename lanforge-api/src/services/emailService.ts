@@ -6,6 +6,15 @@ const FROM_EMAIL = process.env.POSTMARK_FROM_EMAIL || 'noreply@lanforge.com';
 const FROM_NAME = process.env.POSTMARK_FROM_NAME || 'LANForge';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+const escapeHtml = (unsafe: string): string => {
+  return String(unsafe)
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
+    .replace(/'/g, '&#039;');
+};
+
 interface OrderEmailData {
   orderNumber: string;
   customerName: string;
@@ -30,7 +39,7 @@ export const sendOrderConfirmation = async (data: OrderEmailData): Promise<void>
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px;border-bottom:1px solid #e5e7eb">${item.name}</td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb">${escapeHtml(item.name)}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center">${item.quantity}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right">$${item.price.toFixed(2)}</td>
         </tr>`
@@ -51,11 +60,11 @@ export const sendOrderConfirmation = async (data: OrderEmailData): Promise<void>
             <p style="color:#d1fae5;margin:8px 0 0">Order Confirmed! 🎉</p>
           </div>
           <div style="padding:32px">
-            <h2 style="color:#111827">Hi ${data.customerName},</h2>
+            <h2 style="color:#111827">Hi ${escapeHtml(data.customerName)},</h2>
             <p style="color:#6b7280">Thank you for your order! We're getting it ready for you.</p>
             <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:24px 0">
               <p style="margin:0;font-size:14px;color:#6b7280">Order Number</p>
-              <p style="margin:4px 0 0;font-size:24px;font-weight:bold;color:#10b981">#${data.orderNumber}</p>
+              <p style="margin:4px 0 0;font-size:24px;font-weight:bold;color:#10b981">#${escapeHtml(data.orderNumber)}</p>
             </div>
             <table style="width:100%;border-collapse:collapse">
               <thead>
@@ -85,7 +94,7 @@ export const sendOrderConfirmation = async (data: OrderEmailData): Promise<void>
             <div style="margin-top:32px;padding:16px;background:#f9fafb;border-radius:8px">
               <p style="margin:0;font-size:14px;font-weight:bold;color:#111827">Shipping To:</p>
               <p style="margin:4px 0 0;color:#6b7280;font-size:14px">
-                ${data.shippingAddress.address}, ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.zip}
+                ${escapeHtml(data.shippingAddress.address)}, ${escapeHtml(data.shippingAddress.city)}, ${escapeHtml(data.shippingAddress.state)} ${escapeHtml(data.shippingAddress.zip)}
               </p>
             </div>
             <div style="text-align:center;margin-top:32px">
@@ -103,7 +112,7 @@ export const sendOrderConfirmation = async (data: OrderEmailData): Promise<void>
       </body>
       </html>
     `,
-    TextBody: `Order Confirmation #${data.orderNumber}\n\nHi ${data.customerName},\nThank you for your order!\n\nTotal: $${data.total.toFixed(2)}\n\nTrack your order: ${FRONTEND_URL}/order-status?order=${data.orderNumber}`,
+    TextBody: `Order Confirmation #${data.orderNumber}\n\nHi ${data.customerName},\nThank you for your order!\n\nTotal: $${data.total.toFixed(2)}\n\nTrack your order: ${FRONTEND_URL}/order-status?order=${encodeURIComponent(data.orderNumber)}`,
     MessageStream: 'outbound',
   });
 };
@@ -119,7 +128,7 @@ export const sendWelcomeEmail = async (name: string, email: string): Promise<voi
           <h1 style="color:#fff;margin:0">Welcome to LANForge!</h1>
         </div>
         <div style="padding:32px">
-          <h2>Hi ${name},</h2>
+          <h2>Hi ${escapeHtml(name)},</h2>
           <p>Welcome to the LANForge family! We build high-performance gaming PCs tailored for players like you.</p>
           <p>As a welcome gift, use code <strong style="color:#10b981;font-size:20px">WELCOME10</strong> for 10% off your first order!</p>
           <div style="text-align:center;margin-top:32px">
@@ -152,15 +161,15 @@ export const sendShippingNotification = async (
           <h1 style="color:#fff;margin:0">Your order is on its way!</h1>
         </div>
         <div style="padding:32px">
-          <h2>Hi ${name},</h2>
-          <p>Great news! Your order <strong>#${orderNumber}</strong> has been shipped.</p>
+          <h2>Hi ${escapeHtml(name)},</h2>
+          <p>Great news! Your order <strong>#${escapeHtml(orderNumber)}</strong> has been shipped.</p>
           <div style="background:#eff6ff;border-radius:8px;padding:16px;margin:24px 0">
             <p style="margin:0;font-size:14px;color:#6b7280">Tracking Number</p>
-            <p style="margin:4px 0 0;font-size:20px;font-weight:bold;color:#3b82f6">${trackingNumber}</p>
-            <p style="margin:4px 0 0;color:#6b7280;font-size:14px">Carrier: ${carrier}</p>
+            <p style="margin:4px 0 0;font-size:20px;font-weight:bold;color:#3b82f6">${escapeHtml(trackingNumber)}</p>
+            <p style="margin:4px 0 0;color:#6b7280;font-size:14px">Carrier: ${escapeHtml(carrier)}</p>
           </div>
           <div style="text-align:center;margin-top:32px">
-            <a href="${FRONTEND_URL}/order-status?order=${orderNumber}" style="background:#3b82f6;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold">
+            <a href="${FRONTEND_URL}/order-status?order=${encodeURIComponent(orderNumber)}" style="background:#3b82f6;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold">
               Track Order
             </a>
           </div>
@@ -177,7 +186,7 @@ export const sendPasswordReset = async (
   email: string,
   resetToken: string
 ): Promise<void> => {
-  const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(resetToken)}`;
   await client.sendEmail({
     From: `${FROM_NAME} <${FROM_EMAIL}>`,
     To: email,
@@ -185,7 +194,7 @@ export const sendPasswordReset = async (
     HtmlBody: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
         <div style="padding:32px">
-          <h2>Hi ${name},</h2>
+          <h2>Hi ${escapeHtml(name)},</h2>
           <p>We received a request to reset your password. Click the button below to set a new password:</p>
           <div style="text-align:center;margin-top:32px">
             <a href="${resetUrl}" style="background:#10b981;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold">
