@@ -229,6 +229,7 @@ export const scrapeSinglePart = async (part: any): Promise<boolean> => {
     }
 
     if (!isNaN(cost) && cost > 0) {
+      const oldCost = part.cost;
       const markupCost = cost * 1.10; // 10% markup
       const retailPrice = Math.floor(markupCost) + 0.99; // round down and add .99
       
@@ -236,6 +237,19 @@ export const scrapeSinglePart = async (part: any): Promise<boolean> => {
       part.price = retailPrice;
       await part.save();
       console.log(`[Scraper] Successfully updated ${part.brand} ${part.partModel}: New Cost: $${cost}, New Price: $${retailPrice}`);
+
+      try {
+        const AuditLog = (await import('../models/AuditLog')).default;
+        await AuditLog.create({
+          action: 'system_price_update',
+          resource: 'pc-part',
+          resourceId: String(part._id),
+          details: { oldCost, newCost: cost },
+          status: 'success',
+        });
+      } catch (e) {
+        console.error('AuditLog error:', e);
+      }
 
       // Find all Products (PCs) that contain this part
       const affectedProducts = await Product.find({ parts: part._id }).populate('parts');

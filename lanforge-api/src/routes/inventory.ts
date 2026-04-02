@@ -93,6 +93,21 @@ router.put('/:productId/stock', protect, staffOrAdmin, async (req: AuthRequest, 
 
     await product.save();
 
+    try {
+      const AuditLog = (await import('../models/AuditLog')).default;
+      await AuditLog.create({
+        userId: req.user?._id,
+        userEmail: req.user?.email,
+        action: 'update_inventory',
+        resource: 'product',
+        resourceId: String(product._id),
+        details: { type, quantity, notes, prevStock, newStock: product.stock },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        status: 'success',
+      });
+    } catch (e) {}
+
     res.json({
       product,
       adjustment: { type, quantity, notes, prevStock, newStock: product.stock, by: req.user?.email },
@@ -122,11 +137,28 @@ router.post('/bulk/adjust', protect, staffOrAdmin, async (req: AuthRequest, res:
           continue;
         }
 
+        const prevStock = product.stock;
         if (adj.type === 'set') product.stock = adj.quantity;
         else if (adj.type === 'add') product.stock += adj.quantity;
         else if (adj.type === 'remove') product.stock = Math.max(0, product.stock - adj.quantity);
 
         await product.save();
+        
+        try {
+          const AuditLog = (await import('../models/AuditLog')).default;
+          await AuditLog.create({
+            userId: req.user?._id,
+            userEmail: req.user?.email,
+            action: 'update_inventory',
+            resource: 'product',
+            resourceId: String(product._id),
+            details: { type: adj.type, quantity: adj.quantity, prevStock, newStock: product.stock },
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+            status: 'success',
+          });
+        } catch (e) {}
+        
         results.push({ productId: adj.productId, status: 'ok', newStock: product.stock });
       } catch (e) {
         results.push({ productId: adj.productId, status: 'error', error: String(e) });

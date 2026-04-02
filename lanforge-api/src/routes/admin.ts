@@ -407,6 +407,11 @@ router.post(
     body('role').isIn(['admin', 'staff']).withMessage('Role must be admin or staff'),
   ],
   async (req: AuthRequest, res: Response): Promise<void> => {
+    // Basic pre-validation to stop pre-hashed string bypass attempts in payload
+    if (req.body.password && (req.body.password.startsWith('$2a$') || req.body.password.startsWith('$2b$') || req.body.password.startsWith('$2y$')) && req.body.password.length === 60) {
+      res.status(400).json({ errors: [{ msg: 'Invalid password format. Cannot use a pre-hashed string.' }] });
+      return;
+    }
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
@@ -445,6 +450,13 @@ router.post(
 // PUT /api/admin/users/:id
 router.put('/users/:id', protect, adminOnly, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // If role is being changed, let's track the old role
+    const oldUser = await User.findById(req.params.id);
+    if (!oldUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
     const allowedFields = ['name', 'role', 'isActive', 'avatar'];
     const updates: any = {};
     for (const field of allowedFields) {
@@ -467,13 +479,15 @@ router.put('/users/:id', protect, adminOnly, async (req: AuthRequest, res: Respo
       return;
     }
 
+    const isRoleChange = updates.role && updates.role !== oldUser.role;
+
     await AuditLog.create({
       userId: req.user?._id,
       userEmail: req.user?.email,
-      action: 'update_user',
+      action: isRoleChange ? 'change_user_role' : 'update_user',
       resource: 'user',
       resourceId: String(user._id),
-      details: updates,
+      details: { ...updates, oldRole: isRoleChange ? oldUser.role : undefined },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
       status: 'success',
@@ -530,6 +544,13 @@ router.post(
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { newPassword } = req.body;
+      
+      // Prevent pre-hashed string bypass in payload
+      if (newPassword && (newPassword.startsWith('$2a$') || newPassword.startsWith('$2b$') || newPassword.startsWith('$2y$')) && newPassword.length === 60) {
+        res.status(400).json({ message: 'Invalid password format. Cannot use a pre-hashed string.' });
+        return;
+      }
+
       const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!newPassword || !passRegex.test(newPassword)) {
         res.status(400).json({ message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character' });
@@ -728,6 +749,11 @@ router.post(
       .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   ],
   async (req: AuthRequest, res: Response): Promise<void> => {
+    // Prevent pre-hashed string bypass in payload
+    if (req.body.newPassword && (req.body.newPassword.startsWith('$2a$') || req.body.newPassword.startsWith('$2b$') || req.body.newPassword.startsWith('$2y$')) && req.body.newPassword.length === 60) {
+      res.status(400).json({ errors: [{ msg: 'Invalid password format. Cannot use a pre-hashed string.' }] });
+      return;
+    }
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });

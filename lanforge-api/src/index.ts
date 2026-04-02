@@ -8,9 +8,11 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
 import connectDB from './config/db';
 import { startPriceScrapingJob } from './services/scraperService';
 import { AppError } from './utils/AppError';
+import { env } from './config/env';
 
 // Routes
 import authRoutes from './routes/auth';
@@ -57,21 +59,18 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Trust proxy (needed for rate-limiter behind reverse proxy)
-app.set('trust proxy', 1);
-
 // Security middleware
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
     xXssProtection: true,
     xFrameOptions: { action: 'deny' },
   })
 );
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
   })
 );
@@ -113,14 +112,15 @@ app.use('/api/auth/refresh', refreshLimiter);
 app.use('/api/payments/webhook/stripe', express.raw({ type: 'application/json' }));
 
 // Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Sanitize data
 app.use(mongoSanitize());
+app.use(xss());
 
 // HTTP request logging (dev only)
-if (process.env.NODE_ENV === 'development') {
+if (env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
@@ -179,12 +179,11 @@ app.use((err: AppError | Error | any, _req: Request, res: Response, _next: NextF
   const statusCode = err instanceof AppError ? err.statusCode : err.statusCode ?? 500;
   res.status(statusCode).json({
     message: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 LANForge API running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`🚀 LANForge API running on port ${PORT} in ${env.NODE_ENV} mode`);
   
   // Start background jobs
   startPriceScrapingJob();
