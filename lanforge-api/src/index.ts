@@ -51,6 +51,9 @@ import invoicesRoutes from './routes/invoices';
 
 const app = express();
 
+// Trust proxy for rate limiting behind reverse proxies (Render, Nginx, etc.)
+app.set('trust proxy', 1);
+
 // Enable ETags for caching performance
 app.set('etag', 'weak');
 
