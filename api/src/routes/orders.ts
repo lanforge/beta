@@ -564,9 +564,14 @@ router.get('/customer/:customerId', async (req: Request, res: Response): Promise
 // GET /api/orders/:id — public: single order by id or orderNumber
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
-    const order = await Order.findOne({
-      $or: [{ _id: req.params.id }, { orderNumber: req.params.id }],
-    })
+    const { id } = req.params;
+    const isObjectId = id.match(/^[0-9a-fA-F]{24}$/);
+    
+    const query = isObjectId 
+      ? { $or: [{ _id: id }, { orderNumber: id }] }
+      : { orderNumber: id };
+
+    const order = await Order.findOne(query)
       .select('-__v')
       .populate('customer', 'firstName lastName email loyaltyPoints')
       .populate('appliedDiscount', 'code type value');
