@@ -268,23 +268,62 @@ router.post('/recalculate', protect, staffOrAdmin, async (_req: AuthRequest, res
     const markupPercentage = markupSetting && typeof markupSetting.value === 'number' ? markupSetting.value : 20;
     const markupMultiplier = 1 + (markupPercentage / 100);
 
-    const products = await Product.find({}).populate('parts');
+    const PCPart = mongoose.model('PCPart');
+    const products = await Product.find({});
     
     let updatedCount = 0;
     for (const product of products) {
-      // Just use the existing cost as truth
-      // (which is explicitly set from Admin > Add/Edit Product or imported as a flat number)
-      
-      const calculatedPrice = product.cost * markupMultiplier;
-      
-      // Round up to nearest 49.99 or 99.99
-      const cents = Math.round(calculatedPrice * 100);
-      const roundingUnit = 5000; // $50.00 in cents
-      const chunks = Math.ceil((cents + 1) / roundingUnit);
-      product.price = (chunks * roundingUnit - 1) / 100;
-
-      await product.save();
-      updatedCount++;
+      if (product.parts && product.parts.length > 0) {
+        let newCost = 0;
+        
+        // Fetch each part explicitly by ObjectId to ensure we have the latest cost/price
+        for (const partId of product.parts) {
+          const part = await PCPart.findById(partId);
+          if (part) {
+            // KEY FIX: Only use COST for calculations. Price is strictly retail markup, and should not be mixed in.
+            // Some very expensive parts like $5000 GPUs do not have an initial internal cost markup stored, just price.
+            // If they don't have cost, fallback to price to capture their value.
+            let partCost = part.cost || 0;
+            if (partCost === 0) {
+              partCost = part.price || 0;
+            }
+            newCost += partCost;
+          }
+        }
+        
+        // Only recalculate if we actually found part costs
+        if (newCost > 0) {
+          // As requested: dynamically calculate cost via the cost of the parts
+          // The database `product.cost` field gets overwritten with the real dynamic cost
+          product.cost = newCost;
+          
+          const calculatedPrice = newCost * markupMultiplier;
+          
+          // Add markup and round to the nearest $49.99 or $99.99
+          // Example: 2638.56 -> target is 2649.99
+          const fullDollars = Math.floor(calculatedPrice);
+          const remainder = fullDollars % 50;
+          
+          let roundedPrice;
+          if (remainder === 49) {
+            roundedPrice = fullDollars + 0.99;
+          } else {
+            // Find the next 49.99 or 99.99
+            const chunksOf50 = Math.ceil((calculatedPrice - 49.99) / 50);
+            roundedPrice = (chunksOf50 * 50) + 49.99;
+            
+            // Just in case it's exactly on a boundary or negative chunks, ensure it's higher
+            if (roundedPrice < calculatedPrice) {
+               roundedPrice += 50;
+            }
+          }
+          
+          product.price = roundedPrice;
+          
+          await product.save();
+          updatedCount++;
+        }
+      }
     }
 
     res.json({ message: `Successfully recalculated ${updatedCount} products with a ${markupPercentage}% markup.` });

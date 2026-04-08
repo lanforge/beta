@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import PCPart, { PCPartType } from '../models/PCPart';
+import Product from '../models/Product';
 import { protect, staffOrAdmin, AuthRequest } from '../middleware/auth';
 import { scrapeSinglePart, scrapeDetailsFromUrl } from '../services/scraperService';
 
@@ -239,6 +241,22 @@ router.get('/admin/all', protect, staffOrAdmin, async (req: AuthRequest, res: Re
   }
 });
 
+// GET /api/pc-parts/admin/:id — admin/staff: single part with all fields
+router.get('/admin/:id', protect, staffOrAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const part = await PCPart.findOne({
+      $or: [{ _id: req.params.id }, { slug: req.params.id }]
+    });
+    if (!part) {
+      res.status(404).json({ message: 'Part not found' });
+      return;
+    }
+    res.json({ part });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // POST /api/pc-parts — admin/staff: create a part
 router.post(
   '/',
@@ -307,6 +325,45 @@ router.put('/:id', protect, staffOrAdmin, async (req: AuthRequest, res: Response
       res.status(404).json({ message: 'Part not found' });
       return;
     }
+
+    // Sync affected products
+    try {
+      const Settings = mongoose.model('Settings');
+      const markupSetting = await Settings.findOne({ key: 'productMarkupPercentage' });
+      const markupPercentage = markupSetting && typeof markupSetting.value === 'number' ? markupSetting.value : 20;
+      const markupMultiplier = 1 + (markupPercentage / 100);
+
+      const affectedProducts = await Product.find({ parts: part._id }).populate('parts');
+      
+      if (affectedProducts.length > 0) {
+        const bulkOps = affectedProducts.map((product: any) => {
+          let newProductCost = 0;
+          for (const p of product.parts) {
+            newProductCost += p.cost || 0;
+          }
+          
+          const calculatedPrice = newProductCost * markupMultiplier;
+          
+          // Round up to nearest 49.99 or 99.99
+          const cents = Math.round(calculatedPrice * 100);
+          const roundingUnit = 5000; // $50.00 in cents
+          const chunks = Math.ceil((cents + 1) / roundingUnit);
+          const newPrice = (chunks * roundingUnit - 1) / 100;
+          
+          return {
+            updateOne: {
+              filter: { _id: product._id },
+              update: { $set: { cost: newProductCost, price: newPrice } }
+            }
+          };
+        });
+
+        await Product.bulkWrite(bulkOps);
+      }
+    } catch (syncErr) {
+      console.error('Error syncing products on part update:', syncErr);
+    }
+
     res.json({ part });
   } catch (error: any) {
     if (error.code === 11000) {

@@ -96,8 +96,8 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
             if (cat) {
               cat.options.push({
                 id: p._id,
-                name: p.name || `${p.brand || ''} ${p.partModel || ''}`.trim() || 'Unknown Component',
-                description: `${p.brand || ''} ${p.partModel || ''}`.trim(),
+                name: p.partModel || p.name || 'Unknown Component',
+                description: p.brand || '',
                 price: p.price || 0,
                 specs: p.specs || {}
               });
@@ -220,6 +220,17 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
         if (cpu && cpu.specs?.socket && specs.socket) {
           if (cpu.specs.socket !== specs.socket) return false;
         }
+
+        // Also check AMD CPU naming vs LGA1851 Z890 boards
+        if (cpu && option.name) {
+          const isAmdCpu = cpu.name.toLowerCase().includes('amd') || cpu.name.toLowerCase().includes('ryzen');
+          const isIntelBoard = option.name.toLowerCase().includes('z890') || option.name.toLowerCase().includes('lga1851');
+          if (isAmdCpu && isIntelBoard) return false;
+
+          const isIntelCpu = cpu.name.toLowerCase().includes('intel') || cpu.name.toLowerCase().includes('core');
+          const isAmdBoard = option.name.toLowerCase().includes('x870') || option.name.toLowerCase().includes('b850');
+          if (isIntelCpu && isAmdBoard) return false;
+        }
       }
 
       if (category.id === 'ram') {
@@ -251,19 +262,20 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
           }
         }
 
-        const cpu = selectedComponents.cpu;
         const gpu = selectedComponents.gpu;
-        const baseTdp = (Number(cpu?.specs?.tdp) || 0) + (Number(gpu?.specs?.tdp) || 0);
-        const requiredWattage = baseTdp > 0 ? baseTdp + 150 : 0;
-        
-        if (requiredWattage > 0) {
-          let psuWattage = specs.wattage || 0;
-          if (!psuWattage) {
-            const match = option.name.match(/(\d+)W/i) || option.description?.match(/(\d+)W/i);
-            if (match) psuWattage = parseInt(match[1]);
-          }
-          if (psuWattage > 0 && psuWattage < requiredWattage) {
-            return false;
+
+        let psuWattage = specs.wattage || 0;
+        if (!psuWattage) {
+          const match = option.name.match(/(\d+)W/i) || option.description?.match(/(\d+)W/i);
+          if (match) psuWattage = parseInt(match[1]);
+        }
+
+        if (gpu && psuWattage > 0) {
+          const gpuName = gpu.name.toLowerCase() || '';
+          const gpuDesc = gpu.description?.toLowerCase() || '';
+          
+          if (gpuName.includes('5090') || gpuDesc.includes('5090')) {
+            if (psuWattage < 1000) return false;
           }
         }
       }
@@ -314,10 +326,6 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
 
   const currentCategory = componentCategories[currentStep] || { id: '', name: '', options: [] };
 
-  // Calculate estimated wattage from CPU, GPU, and a buffer for motherboard, RGB, fans, etc.
-  const baseTdp = (Number(selectedComponents.cpu?.specs?.tdp) || 0) + (Number(selectedComponents.gpu?.specs?.tdp) || 0);
-  const estimatedWattage = baseTdp > 0 ? baseTdp + 150 : 0;
-
   // Calculate total price including the selected case
   const componentsTotal = Object.values(selectedComponents).reduce((sum, comp) => {
     if (Array.isArray(comp)) {
@@ -365,7 +373,6 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
         Object.entries(newSelectedComponents).forEach(([catId, comp]) => {
           const items = Array.isArray(comp) ? comp : [comp];
           items.forEach(item => {
-            if (String(item.id).startsWith('no-part-')) return;
             const existing = partsMap.get(item.id);
             if (existing) {
               existing.quantity += 1;
@@ -376,7 +383,7 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
         });
 
         const parts = Array.from(partsMap.entries()).map(([partId, data]) => ({
-          part: partId,
+          part: String(partId).startsWith('no-part-') ? undefined : partId,
           quantity: data.quantity,
           partType: data.partType
         }));
@@ -459,12 +466,7 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
       const next = { ...selectedComponents, [categoryId]: option };
       
       // Cascading compatibility clears
-      // Cascading compatibility clears
-      if (categoryId === 'cpu' || categoryId === 'gpu') {
-         const baseTdp = (categoryId === 'cpu' ? (Number(option.specs?.tdp) || 0) : (Number(next.cpu?.specs?.tdp) || 0)) +
-                         (categoryId === 'gpu' ? (Number(option.specs?.tdp) || 0) : (Number(next.gpu?.specs?.tdp) || 0));
-         const requiredWattage = baseTdp > 0 ? baseTdp + 150 : 0;
-         
+      if (categoryId === 'gpu') {
          const psu = next.psu;
          if (psu) {
            let psuWattage = psu.specs?.wattage || 0;
@@ -472,8 +474,14 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
              const match = psu.name.match(/(\d+)W/i) || psu.description?.match(/(\d+)W/i);
              if (match) psuWattage = parseInt(match[1]);
            }
-           if (psuWattage > 0 && psuWattage < requiredWattage) {
-             delete next.psu;
+           
+           if (psuWattage > 0) {
+             const gpuName = option.name.toLowerCase() || '';
+             const gpuDesc = option.description?.toLowerCase() || '';
+             
+             if ((gpuName.includes('5090') || gpuDesc.includes('5090')) && psuWattage < 1000) {
+               delete next.psu;
+             }
            }
          }
       }
@@ -655,7 +663,7 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
         <div key={`${categoryId}-${idx}`} className="flex justify-between items-start gap-4">
           <div>
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{categoryName}</div>
-            <div className="text-sm text-gray-300 line-clamp-1">{count > 1 ? `${count}x ` : ''}{comp.name}</div>
+            <div className="text-sm text-gray-300 line-clamp-1">{count > 1 ? `${count}x ` : ''}{comp.description ? `${comp.description} ` : ''}{comp.name}</div>
           </div>
           <div className="text-sm text-white">${(comp.price * count).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
         </div>
@@ -666,45 +674,17 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
       <div key={categoryId} className="flex justify-between items-start gap-4">
         <div>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{categoryName}</div>
-          <div className="text-sm text-gray-300 line-clamp-1">{component.name}</div>
+          <div className="text-sm text-gray-300 line-clamp-1">
+            {String(component.id).startsWith('no-part-') 
+              ? component.name.split(' - ')[0] 
+              : `${component.description ? `${component.description} ` : ''}${component.name}`}
+          </div>
         </div>
         <div className="text-sm text-white">${component.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
       </div>
     );
   };
   
-  const renderReviewSummary = (categoryId: string, component: any, categoryName: string) => {
-    if (Array.isArray(component)) {
-      if (component.length === 0) return null;
-      const counts = new Map<string | number, { comp: ComponentOption; count: number }>();
-      component.forEach(c => {
-        const existing = counts.get(c.id);
-        if (existing) existing.count += 1;
-        else counts.set(c.id, { comp: c, count: 1 });
-      });
-
-      return Array.from(counts.values()).map(({ comp, count }, idx) => (
-        <div key={`${categoryId}-${idx}`} className="flex justify-between items-center py-3 px-4 bg-[#1a1a1a] rounded-lg border border-white/5">
-          <div>
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">{categoryName}</div>
-            <div className="text-sm text-gray-200 mt-1">{count > 1 ? `${count}x ` : ''}{comp.name}</div>
-          </div>
-          <div className="font-semibold text-white">${(comp.price * count).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-        </div>
-      ));
-    }
-
-    return (
-      <div key={categoryId} className="flex justify-between items-center py-3 px-4 bg-[#1a1a1a] rounded-lg border border-white/5">
-        <div>
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">{categoryName}</div>
-          <div className="text-sm text-gray-200 mt-1">{component.name}</div>
-        </div>
-        <div className="font-semibold text-white">${component.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-      </div>
-    );
-  };
-
   return (
     <div className="bg-gray-950 text-gray-200 pb-32">
       {/* Subtle Top Promo Banner for Help */}
@@ -1062,12 +1042,19 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                   }
 
                   if (currentCategory.id === 'fans') {
-                    const mm360 = options.filter((o: any) => o.name.includes('360mm') || o.description.includes('360mm'));
-                    const mm280 = options.filter((o: any) => o.name.includes('280mm') || o.description.includes('280mm'));
-                    const mm240 = options.filter((o: any) => o.name.includes('240mm') || o.description.includes('240mm'));
-                    const mm120 = options.filter((o: any) => o.name.includes('120mm') || o.description.includes('120mm'));
+                    const getFanSize = (o: any) => {
+                      if (o.specs?.size) return String(o.specs.size).replace(/[^0-9]/g, '');
+                      const match = (o.name + ' ' + (o.description || '')).match(/(\d+)mm/i);
+                      return match ? match[1] : null;
+                    };
+
+                    const mm360 = options.filter((o: any) => getFanSize(o) === '360');
+                    const mm280 = options.filter((o: any) => getFanSize(o) === '280');
+                    const mm240 = options.filter((o: any) => getFanSize(o) === '240');
+                    const mm140 = options.filter((o: any) => getFanSize(o) === '140');
+                    const mm120 = options.filter((o: any) => getFanSize(o) === '120');
                     
-                    const specified = [...mm360, ...mm280, ...mm240, ...mm120];
+                    const specified = [...mm360, ...mm280, ...mm240, ...mm140, ...mm120];
                     const otherOptions = options.filter((o: any) => !specified.includes(o) && !o.id.toString().startsWith('no-part-'));
                     const skipOption = options.filter((o: any) => o.id.toString().startsWith('no-part-'));
 
@@ -1075,6 +1062,7 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                       <>
                         {renderOptionsGroup('', skipOption)}
                         {renderOptionsGroup('120mm Case Fans', mm120)}
+                        {renderOptionsGroup('140mm Case Fans', mm140)}
                         {renderOptionsGroup('240mm Case Fans', mm240)}
                         {renderOptionsGroup('280mm Case Fans', mm280)}
                         {renderOptionsGroup('360mm Case Fans', mm360)}
@@ -1135,11 +1123,6 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                 
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold text-white">Build Summary</h3>
-                  {estimatedWattage > 0 && (
-                    <div className="text-xs font-semibold px-2 py-1 bg-white/10 rounded-md text-emerald-400" title="Estimated wattage based on CPU and GPU">
-                      Est. Wattage: {estimatedWattage}W
-                    </div>
-                  )}
                 </div>
                 
                 {/* Selected Case */}
@@ -1277,7 +1260,7 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                   return Array.from(counts.values()).map(({ comp, count }, idx) => (
                     <div key={`${categoryId}-${idx}`} className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">{catName}</span>
-                      <span className="font-medium text-white">{count > 1 ? `${count}x ` : ''}{comp.name}</span>
+                      <span className="font-medium text-white">{count > 1 ? `${count}x ` : ''}{comp.description ? `${comp.description} ` : ''}{comp.name}</span>
                     </div>
                   ));
                 }
@@ -1285,7 +1268,11 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                 return (
                   <div key={categoryId} className="flex justify-between items-center text-sm">
                     <span className="text-gray-400">{catName}</span>
-                    <span className="font-medium text-white">{component.name}</span>
+                    <span className="font-medium text-white">
+                      {String(component.id).startsWith('no-part-') 
+                        ? component.name.split(' - ')[0] 
+                        : `${component.description ? `${component.description} ` : ''}${component.name}`}
+                    </span>
                   </div>
                 );
               })}
@@ -1311,7 +1298,6 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                   Object.entries(selectedComponents).forEach(([catId, comp]) => {
                     const items = Array.isArray(comp) ? comp : [comp];
                     items.forEach(item => {
-                      if (String(item.id).startsWith('no-part-')) return;
                       const existing = partsMap.get(item.id);
                       if (existing) {
                         existing.quantity += 1;
@@ -1322,7 +1308,7 @@ const Configurator: React.FC<ConfiguratorProps> = (props) => {
                   });
 
                   const parts = Array.from(partsMap.entries()).map(([partId, data]) => ({
-                    part: partId,
+                    part: String(partId).startsWith('no-part-') ? undefined : partId,
                     quantity: data.quantity,
                     partType: data.partType
                   }));

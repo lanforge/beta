@@ -30,7 +30,7 @@ const AdminAddPartPage: React.FC = () => {
 
   useEffect(() => {
     if (isEditing && id) {
-      api.get(`/pc-parts/${id}`)
+      api.get(`/pc-parts/admin/${id}`)
         .then(res => {
           const part = res.data.part;
           setFormData({
@@ -38,9 +38,9 @@ const AdminAddPartPage: React.FC = () => {
             brand: part.brand || '',
             model: part.partModel || part.model || '',
             sku: part.sku || '',
-            price: part.price ? part.price.toString() : '0',
-            cost: part.cost ? part.cost.toString() : '0',
-            stock: part.stock ? part.stock.toString() : '0',
+            price: part.price !== undefined ? part.price.toString() : '0',
+            cost: part.cost !== undefined ? part.cost.toString() : '0',
+            stock: part.stock !== undefined ? part.stock.toString() : '0',
             isActive: part.isActive !== false,
             productUrl: part.productUrl || '',
             tags: part.tags && part.tags.length > 0 ? part.tags.join(', ') : '',

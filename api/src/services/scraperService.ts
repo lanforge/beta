@@ -3,6 +3,7 @@ import PCPart from '../models/PCPart';
 import Product from '../models/Product';
 import { Agenda } from 'agenda';
 import { MongoBackend } from '@agendajs/mongo-backend';
+import { sendNotification } from './notificationService';
 
 let agenda: Agenda;
 
@@ -229,12 +230,32 @@ export const scrapeSinglePart = async (part: any): Promise<boolean> => {
     }
 
     if (!isNaN(cost) && cost > 0) {
-      const oldCost = part.cost;
+      const oldCost = part.cost || 0;
+      
+      // SAFEGUARD: Prevent accidental massive price drops/spikes from scraper
+      let triggerSafeguard = false;
+      let notificationMessage = '';
+      if (oldCost > 0) {
+        if (cost < oldCost * 0.7) {
+          notificationMessage = `[Scraper] SAFEGUARD TRIGGERED for ${part.brand} ${part.partModel}: Cost dropped drastically from $${oldCost} to $${cost}. Delisting to prevent incorrect purchases.`;
+          console.warn(notificationMessage);
+          triggerSafeguard = true;
+        } else if (cost > oldCost * 1.5) {
+          notificationMessage = `[Scraper] SAFEGUARD TRIGGERED for ${part.brand} ${part.partModel}: Cost spiked from $${oldCost} to $${cost}. Delisting.`;
+          console.warn(notificationMessage);
+          triggerSafeguard = true;
+        }
+      }
+
       const markupCost = cost * 1.10; // 10% markup
       const retailPrice = Math.floor(markupCost) + 0.99; // round down and add .99
-      
+
       part.cost = cost;
       part.price = retailPrice;
+      if (triggerSafeguard) {
+        part.isActive = false; // Delist the part
+        sendNotification(notificationMessage).catch(() => {});
+      }
       await part.save();
       console.log(`[Scraper] Successfully updated ${part.brand} ${part.partModel}: New Cost: $${cost}, New Price: $${retailPrice}`);
 
@@ -259,14 +280,19 @@ export const scrapeSinglePart = async (part: any): Promise<boolean> => {
         for (const p of product.parts as any[]) {
           newProductCost += p.cost || 0;
         }
-        
+
         const prodMarkupCost = newProductCost * 1.20;
         const newPrice = Math.round(prodMarkupCost / 50) * 50 - 0.01;
-        
+
+        const updateDoc: any = { cost: newProductCost, price: newPrice };
+        if (triggerSafeguard) {
+          updateDoc.isActive = false; // Delist affected products too
+        }
+
         return {
           updateOne: {
             filter: { _id: product._id },
-            update: { $set: { cost: newProductCost, price: newPrice } }
+            update: { $set: updateDoc }
           }
         };
       });

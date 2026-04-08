@@ -80,7 +80,7 @@ const ConfiguratorPage: React.FC = () => {
             buildData.build.parts.forEach((partItem: any) => {
               const part = partItem.part;
               // Ignore 'component' generic partType, prioritize part.type from DB for configurator mapping
-              let rawType = partItem.partType?.toLowerCase() === 'component' ? part.type : (partItem.partType || part.type);
+              let rawType = partItem.partType?.toLowerCase() === 'component' ? part?.type : (partItem.partType || part?.type);
               let typeKey = rawType ? rawType.toLowerCase() : '';
               
               if (['ssd', 'hdd', 'nvme', 'm.2'].includes(typeKey)) {
@@ -94,12 +94,22 @@ const ConfiguratorPage: React.FC = () => {
               }
 
               if (typeKey === 'case' || typeKey === 'chassis') {
-                productCaseId = part._id || part.id;
+                if (part) productCaseId = part._id || part.id;
               } else {
+                if (!part) {
+                  // Explicitly selected 'No Part' saved in DB
+                  prefilledParts[typeKey] = {
+                    id: `no-part-${typeKey}`,
+                    name: `No ${typeKey.charAt(0).toUpperCase() + typeKey.slice(1)}`,
+                    description: `Skip selecting a ${typeKey}`,
+                    price: 0
+                  };
+                  return;
+                }
                 const option = {
                   id: part._id || part.id,
-                  name: part.name || `${part.brand || ''} ${part.partModel || ''}`.trim() || 'Unknown Component',
-                  description: `${part.brand || ''} ${part.partModel || ''}`.trim(),
+                  name: part.partModel || part.name || 'Unknown Component',
+                  description: part.brand || '',
                   price: part.price || 0
                 };
                 
@@ -151,8 +161,8 @@ const ConfiguratorPage: React.FC = () => {
                 const partDoc = part.part || part; // Handle parts that might be populated or embedded
                 const option = {
                   id: partDoc._id || partDoc.id,
-                  name: partDoc.name || `${partDoc.brand || ''} ${partDoc.partModel || ''}`.trim() || 'Unknown Component',
-                  description: `${partDoc.brand || ''} ${partDoc.partModel || ''}`.trim(),
+                  name: partDoc.partModel || partDoc.name || 'Unknown Component',
+                  description: partDoc.brand || '',
                   price: partDoc.price || 0
                 };
                 

@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IBuildPart {
-  part: mongoose.Types.ObjectId;
+  part?: mongoose.Types.ObjectId;
   quantity: number;
   partType: string;
   serialNumbers?: string[];
@@ -27,7 +27,7 @@ export interface ICustomBuild extends Document {
 
 const BuildPartSchema = new Schema<IBuildPart>(
   {
-    part: { type: Schema.Types.ObjectId, ref: 'PCPart', required: true },
+    part: { type: Schema.Types.ObjectId, ref: 'PCPart' }, // Optional to allow explicitly saved 'no-part' selections
     quantity: { type: Number, required: true, min: 1, default: 1 },
     partType: { type: String, required: true },
     serialNumbers: [{ type: String }],

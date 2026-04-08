@@ -130,7 +130,19 @@ const CustomBuildPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {build.parts.map((item: any, index: number) => {
               const part = item.part;
-              if (!part) return null;
+              if (!part) {
+                return (
+                  <div key={index} className="flex justify-between items-center text-sm">
+                    <span className="text-gray-400 w-1/3 truncate pr-4">{item.partType || 'Component'}</span>
+                    <span className="font-medium text-gray-500 italic flex-1 truncate pr-4 text-right">
+                      Not Selected
+                    </span>
+                    <span className="text-white font-medium shrink-0">
+                      $0.00
+                    </span>
+                  </div>
+                );
+              }
               
               return (
                 <div key={index} className="flex justify-between items-center text-sm">

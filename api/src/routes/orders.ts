@@ -456,7 +456,7 @@ router.post(
               const partsList: Array<any> = [];
               if (cb.parts && cb.parts.length > 0) {
                 cb.parts.forEach((bp: any) => {
-                  const partName = bp.part ? `${bp.part.brand} ${bp.part.partModel}` : bp.partType;
+                  const partName = bp.part ? `${bp.part.brand} ${bp.part.partModel}` : `No ${bp.partType.charAt(0).toUpperCase() + bp.partType.slice(1)} Selected`;
                   partsList.push({
                     partType: bp.partType,
                     part: bp.part?._id || undefined,

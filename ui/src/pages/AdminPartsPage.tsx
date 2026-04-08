@@ -373,6 +373,7 @@ const AdminPartsPage: React.FC = () => {
                 <th className="text-left py-4 px-6 text-gray-400 font-medium text-sm">Part Name</th>
                 <th className="text-left py-4 px-6 text-gray-400 font-medium text-sm">Type & Brand</th>
                 <th className="text-right py-4 px-6 text-gray-400 font-medium text-sm">Price</th>
+                <th className="text-right py-4 px-6 text-gray-400 font-medium text-sm">Cost</th>
                 <th className="text-right py-4 px-6 text-gray-400 font-medium text-sm">Stock</th>
                 <th className="text-center py-4 px-6 text-gray-400 font-medium text-sm">Status</th>
                 <th className="text-right py-4 px-6 text-gray-400 font-medium text-sm">Actions</th>
@@ -433,6 +434,9 @@ const AdminPartsPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 text-right text-white font-medium">
                       ${part.price?.toFixed(2)}
+                    </td>
+                    <td className="py-4 px-6 text-right text-emerald-400 font-medium">
+                      {typeof part.cost === 'number' ? `$${part.cost.toFixed(2)}` : 'N/A'}
                     </td>
                     <td className="py-4 px-6 text-right text-white font-medium">
                       {part.stock}

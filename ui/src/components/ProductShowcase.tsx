@@ -21,7 +21,7 @@ const ProductShowcase: React.FC = () => {
   const [products, setProducts] = React.useState<Product[]>([]);
 
   React.useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/products/featured`)
+    fetch(`${process.env.REACT_APP_API_URL}/products?limit=100`)
       .then(res => res.json())
       .then(data => {
         if (data.products) {
@@ -113,8 +113,13 @@ const ProductShowcase: React.FC = () => {
         
         {seriesOrder.map((seriesObj, seriesIndex) => {
           const series = seriesObj.label;
-          const seriesProducts = seriesGroups[series];
+          let seriesProducts = seriesGroups[series];
           if (!seriesProducts) return null;
+          
+          const isPreconfigured = series === 'Pre Configured';
+          if (isPreconfigured) {
+            seriesProducts = seriesProducts.slice(0, 3);
+          }
           
           return (
             <motion.div 
@@ -267,6 +272,18 @@ const ProductShowcase: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {isPreconfigured && (
+                <div className="mt-8 flex justify-center">
+                  <Link to="/pcs">
+                    <div className="skew-x-[-10deg] bg-black/40 backdrop-blur-md border border-cyan-500/50 rounded-lg overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.25)] ring-1 ring-cyan-500/50">
+                      <button className="skew-x-[10deg] px-8 py-3 text-sm font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 hover:from-cyan-300 hover:to-cyan-500 transition-all duration-300">
+                        View All
+                      </button>
+                    </div>
+                  </Link>
+                </div>
+              )}
             </motion.div>
           );
         })}

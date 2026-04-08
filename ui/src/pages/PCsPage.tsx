@@ -18,7 +18,6 @@ interface Product {
 
 const PCsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [expandedSpecs, setExpandedSpecs] = useState<Record<number, boolean>>({});
   const [selectedSeries, setSelectedSeries] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('price-asc');
   const [selectedColors, setSelectedColors] = useState<Record<string, string>>({});
@@ -53,13 +52,6 @@ const PCsPage: React.FC = () => {
       })
       .catch(err => console.error(err));
   }, []);
-
-  const toggleSpecs = (productId: number) => {
-    setExpandedSpecs(prev => ({
-      ...prev,
-      [productId]: !prev[productId]
-    }));
-  };
 
   const seriesOrder = [
     { label: 'LANForge Series', tag: 'lanforge series' },
@@ -157,8 +149,6 @@ const PCsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {seriesProducts.map((product) => {
-                  const isExpanded = expandedSpecs[product.id] || false;
-                  
                   return (
                     <motion.div
                       key={product.id}
@@ -209,15 +199,15 @@ const PCsPage: React.FC = () => {
                           <div className="mb-6">
                             <div className="flex items-center justify-between mb-3">
                               <h4 className="text-sm font-semibold text-gray-300">Key Specifications</h4>
-                              <button
-                                onClick={() => toggleSpecs(product.id)}
+                              <Link
+                                to={`/products/${product.id}`}
                                 className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                               >
-                                {isExpanded ? 'Show Less' : 'View All Specs'}
-                              </button>
+                                View All Specs
+                              </Link>
                             </div>
                             <ul className="space-y-2">
-                              {(isExpanded ? product.specs : product.specs.slice(0, 3)).map((spec, idx) => (
+                              {product.specs.slice(0, 3).map((spec, idx) => (
                                 <li key={idx} className="flex items-start">
                                   <svg className="w-4 h-4 text-emerald-400 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
