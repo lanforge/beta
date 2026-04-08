@@ -12,7 +12,19 @@ const HomePage: React.FC = () => {
       <SEO 
         title="LANForge | Custom Gaming PC Builder"
         description="Build your dream gaming PC with our interactive configurator. High‑performance custom builds for gamers and creators."
-        url="https://lanforge.com/"
+        url="https://lanforge.co/"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "LANForge",
+          "url": "https://lanforge.co",
+          "logo": "https://lanforge.co/logo512.png",
+          "description": "Premium custom gaming PC builder. Design your ultimate gaming rig with cutting-edge components.",
+          "sameAs": [
+            "https://twitter.com/LANForge",
+            "https://www.facebook.com/LANForge"
+          ]
+        }}
       />
       <Hero />
       <ProductShowcase />

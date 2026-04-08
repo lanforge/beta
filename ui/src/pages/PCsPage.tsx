@@ -98,7 +98,7 @@ const PCsPage: React.FC = () => {
       <SEO 
         title="Gaming PCs & Workstations | LANForge"
         description="Explore our lineup of pre-configured gaming PCs and high-performance workstations. Ready to ship or customize to your exact needs."
-        url="https://lanforge.com/pcs"
+        url="https://lanforge.co/pcs"
       />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-10 md:py-16">

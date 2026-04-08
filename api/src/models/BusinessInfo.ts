@@ -29,7 +29,7 @@ export interface IBusinessInfo extends Document {
 const BusinessInfoSchema = new Schema<IBusinessInfo>(
   {
     storeName: { type: String, required: true, default: 'LANForge' },
-    email: { type: String, required: true, default: 'support@lanforge.com' },
+    email: { type: String, required: true, default: 'support@lanforge.co' },
     phone: { type: String, default: '' },
     address: {
       street: { type: String, default: '' },

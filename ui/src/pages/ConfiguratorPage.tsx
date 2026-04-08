@@ -223,7 +223,7 @@ const ConfiguratorPage: React.FC = () => {
         <SEO 
           title={`Configure ${selectedCase.name} | LANForge Configurator`}
           description={`Customize your PC build using the ${selectedCase.name} case. Choose your CPU, GPU, memory, and more.`}
-          url="https://lanforge.com/configurator"
+          url="https://lanforge.co/configurator"
         />
         {/* Minimalist Top Nav for Configurator */}
         <div className="sticky top-0 z-40 bg-gray-950/90 backdrop-blur-md border-b border-white/10 px-6 py-4">
@@ -266,7 +266,7 @@ const ConfiguratorPage: React.FC = () => {
       <SEO 
         title="Custom PC Configurator | LANForge"
         description="Build your dream PC with our interactive configurator. Start by selecting a case and customize every component."
-        url="https://lanforge.com/configurator"
+        url="https://lanforge.co/configurator"
       />
       {/* Clean Hero Section */}
       <section className="pt-24 pb-16 px-6">

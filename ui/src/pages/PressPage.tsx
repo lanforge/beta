@@ -24,7 +24,7 @@ const PressPage: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
               <div className="card p-6 text-center">
-                <div className="text-3xl font-bold text-gradient-neon mb-2">press@lanforge.com</div>
+                <div className="text-3xl font-bold text-gradient-neon mb-2">press@lanforge.co</div>
                 <div className="text-gray-400">Media Contact</div>
               </div>
               <div className="card p-6 text-center">
@@ -265,8 +265,8 @@ const PressPage: React.FC = () => {
                           </div>
                           <div>
                             <div className="text-sm text-gray-400">Press Inquiries</div>
-                            <a href="mailto:press@lanforge.com" className="text-gradient-neon font-medium hover:underline">
-                              press@lanforge.com
+                            <a href="mailto:press@lanforge.co" className="text-gradient-neon font-medium hover:underline">
+                              press@lanforge.co
                             </a>
                           </div>
                         </div>
@@ -308,7 +308,7 @@ const PressPage: React.FC = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
-                          <span className="text-gray-300">General Media: <a href="mailto:media@lanforge.com" className="text-gradient-neon hover:underline">media@lanforge.com</a></span>
+                          <span className="text-gray-300">General Media: <a href="mailto:media@lanforge.co" className="text-gradient-neon hover:underline">media@lanforge.co</a></span>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-1">

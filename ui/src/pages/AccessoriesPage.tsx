@@ -103,7 +103,7 @@ const AccessoriesPage: React.FC = () => {
       <SEO 
         title="Gaming Accessories & Peripherals | LANForge"
         description="Upgrade your setup with premium gaming keyboards, mice, headsets, and monitors. High-performance gear for competitive gamers."
-        url="https://lanforge.com/accessories"
+        url="https://lanforge.co/accessories"
       />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-10 md:py-16">

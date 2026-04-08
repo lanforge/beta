@@ -20,7 +20,7 @@ async function resetUsers() {
     console.log('Creating new admin user...');
     
     // Create new admin user using credentials from .env if available
-    const email = process.env.ADMIN_EMAIL || 'admin@lanforge.com';
+    const email = process.env.ADMIN_EMAIL || 'admin@lanforge.co';
     const password = process.env.ADMIN_PASSWORD || 'Admin@LANForge2026!';
     
     // User schema automatically hashes password, and we pass unhashed so it passes validation regex

@@ -112,7 +112,7 @@ const CustomBuildPage: React.FC = () => {
       <SEO 
         title={`Custom Build ${build.buildId} | LANForge`}
         description={`Check out this custom PC build configured on LANForge. Featuring ${build.parts.length} components for high-performance gaming.`}
-        url={`https://lanforge.com/build/${id}`}
+        url={`https://lanforge.co/build/${id}`}
       />
       <div className="w-full max-w-xl">
         <motion.div

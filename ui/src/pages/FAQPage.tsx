@@ -13,6 +13,7 @@ import {
   faCommentDots
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 
 interface FAQItem {
   question: string;
@@ -93,8 +94,30 @@ const FAQPage: React.FC = () => {
     )
   })).filter(category => category.items.length > 0);
 
+  // Generate FAQ schema
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqCategories.flatMap(category => 
+      category.items.map(item => ({
+        "@type": "Question",
+        "name": item.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": item.answer
+        }
+      }))
+    )
+  };
+
   return (
     <div className="min-h-screen bg-gray-950">
+      <SEO 
+        title="Frequently Asked Questions | LANForge"
+        description="Find answers to common questions about ordering, products, warranty, and more from LANForge."
+        url="https://lanforge.co/faq"
+        schema={faqSchema}
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-10 md:py-16">
         <div className="absolute inset-0 bg-gradient-radial from-emerald-400/10 via-transparent to-transparent" />

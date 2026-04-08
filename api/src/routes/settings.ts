@@ -25,7 +25,7 @@ router.get('/public', async (_req: Request, res: Response): Promise<void> => {
     // Provide safe fallbacks if the database hasn't been seeded yet by the admin
     const defaultPublicSettings = {
       storeName: 'LANForge',
-      storeEmail: 'support@lanforge.com',
+      storeEmail: 'support@lanforge.co',
       storePhone: '',
       storeAddress: '',
       currency: 'USD',

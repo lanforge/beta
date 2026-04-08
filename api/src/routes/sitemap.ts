@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const baseUrl = process.env.FRONTEND_URL || 'https://lanforge.com';
+    const baseUrl = process.env.FRONTEND_URL || 'https://lanforge.co';
 
     // Fetch dynamic content
     const products = await Product.find({ status: 'active' }).select('_id updatedAt').lean() as any[];

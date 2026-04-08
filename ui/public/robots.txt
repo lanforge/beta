@@ -6,4 +6,4 @@ Disallow: /order-status
 Disallow: /track/
 Disallow: /invoice
 
-Sitemap: https://lanforge.com/sitemap.xml
+Sitemap: https://lanforge.co/sitemap.xml

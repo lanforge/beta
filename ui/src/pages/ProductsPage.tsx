@@ -108,13 +108,38 @@ const ProductsPage: React.FC = () => {
     return `${part.brand} ${modelStr}`.trim();
   };
 
+  const absoluteImage = product.images?.[0] 
+    ? (product.images[0].startsWith('http') ? product.images[0] : `https://lanforge.co${product.images[0].startsWith('/') ? '' : '/'}${product.images[0]}`) 
+    : "https://lanforge.co/logo512.png";
+
+  const absoluteImagesArray = (product.images || []).map(img => img.startsWith('http') ? img : `https://lanforge.co${img.startsWith('/') ? '' : '/'}${img}`);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white selection:bg-emerald-500/30 pt-24 pb-16">
       <SEO 
         title={product.name ? `${product.name} | LANForge Products` : "PC Components & Hardware | LANForge"}
         description={product.description || "Browse our selection of premium PC components, gaming hardware, and accessories."}
-        url={`https://lanforge.com/products/${product._id}`}
-        image={product.images?.[0] || "https://lanforge.com/logo512.png"}
+        url={`https://lanforge.co/products/${product._id}`}
+        image={absoluteImage}
+        schema={{
+          "@context": "https://schema.org/",
+          "@type": "Product",
+          "name": product.name,
+          "image": absoluteImagesArray,
+          "description": product.description,
+          "sku": product._id,
+          "brand": {
+            "@type": "Brand",
+            "name": "LANForge"
+          },
+          "offers": {
+            "@type": "Offer",
+            "url": `https://lanforge.co/products/${product._id}`,
+            "priceCurrency": "USD",
+            "price": product.price,
+            "availability": "https://schema.org/InStock"
+          }
+        }}
       />
       <div className="container-narrow px-6 max-w-6xl mx-auto">
         

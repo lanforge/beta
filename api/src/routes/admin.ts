@@ -589,7 +589,7 @@ router.post(
 
 const DEFAULT_SETTINGS = [
   { key: 'storeName', value: 'LANForge', category: 'general' },
-  { key: 'storeEmail', value: process.env.ADMIN_EMAIL || 'admin@lanforge.com', category: 'general' },
+  { key: 'storeEmail', value: process.env.ADMIN_EMAIL || 'admin@lanforge.co', category: 'general' },
   { key: 'storePhone', value: '', category: 'general' },
   { key: 'storeAddress', value: '', category: 'general' },
   { key: 'currency', value: 'USD', category: 'general' },
