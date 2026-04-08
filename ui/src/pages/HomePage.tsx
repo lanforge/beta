@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
           "description": "Premium custom gaming PC builder. Design your ultimate gaming rig with cutting-edge components.",
           "sameAs": [
             "https://twitter.com/LANForge",
-            "https://www.facebook.com/LANForge"
+            "https://instagram.com/LANForge"
           ]
         }}
       />
