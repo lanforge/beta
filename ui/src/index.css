@@ -162,7 +162,7 @@
   }
 
   .card-glow {
-    @apply card relative before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-emerald-400/20 before:to-blue-500/20 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-10;
+    @apply card relative before:absolute before:inset-0 before:pointer-events-none before:rounded-2xl before:bg-gradient-to-r before:from-emerald-400/20 before:to-blue-500/20 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-10;
   }
 
   /* Section containers */

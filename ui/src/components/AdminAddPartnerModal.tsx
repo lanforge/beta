@@ -16,8 +16,13 @@ const AdminAddPartnerModal: React.FC<AdminAddPartnerModalProps> = ({ isOpen, onC
     logo: '',
     commissionRate: 5,
     isPartner: true,
+    partnerType: 'brand',
     customerDiscountType: '',
     customerDiscountValue: 0,
+    twitter: '',
+    twitch: '',
+    instagram: '',
+    youtube: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -135,13 +140,18 @@ const AdminAddPartnerModal: React.FC<AdminAddPartnerModalProps> = ({ isOpen, onC
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
                 <select
-                  name="isPartner"
-                  value={formData.isPartner ? 'true' : 'false'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isPartner: e.target.value === 'true' }))}
+                  name="partnerType"
+                  value={formData.partnerType}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    partnerType: e.target.value,
+                    isPartner: e.target.value !== 'affiliate' 
+                  }))}
                   className="input w-full bg-gray-800/50"
                 >
-                  <option value="true">Brand Partner</option>
-                  <option value="false">Affiliate</option>
+                  <option value="brand">Brand Partner</option>
+                  <option value="individual">Individual Partner</option>
+                  <option value="affiliate">Affiliate</option>
                 </select>
               </div>
             </div>
@@ -191,7 +201,7 @@ const AdminAddPartnerModal: React.FC<AdminAddPartnerModalProps> = ({ isOpen, onC
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Logo URL</label>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Logo / Profile Image URL</label>
               <input
                 type="text"
                 name="logo"
@@ -200,6 +210,53 @@ const AdminAddPartnerModal: React.FC<AdminAddPartnerModalProps> = ({ isOpen, onC
                 className="input w-full bg-gray-800/50"
                 placeholder="https://..."
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">X (Twitter) Username</label>
+                <input
+                  type="text"
+                  name="twitter"
+                  value={formData.twitter}
+                  onChange={handleChange}
+                  className="input w-full bg-gray-800/50"
+                  placeholder="username"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Twitch Username</label>
+                <input
+                  type="text"
+                  name="twitch"
+                  value={formData.twitch}
+                  onChange={handleChange}
+                  className="input w-full bg-gray-800/50"
+                  placeholder="username"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Instagram Username</label>
+                <input
+                  type="text"
+                  name="instagram"
+                  value={formData.instagram}
+                  onChange={handleChange}
+                  className="input w-full bg-gray-800/50"
+                  placeholder="username"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">YouTube Username</label>
+                <input
+                  type="text"
+                  name="youtube"
+                  value={formData.youtube}
+                  onChange={handleChange}
+                  className="input w-full bg-gray-800/50"
+                  placeholder="username"
+                />
+              </div>
             </div>
           </form>
         </div>

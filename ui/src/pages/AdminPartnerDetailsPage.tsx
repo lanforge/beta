@@ -9,6 +9,7 @@ interface Partner {
   creatorCode: string;
   commissionRate: number;
   isPartner: boolean;
+  partnerType: 'brand' | 'individual' | 'affiliate';
   customerDiscountType?: 'percentage' | 'fixed' | 'free_shipping' | '';
   customerDiscountValue?: number;
   website?: string;
@@ -242,13 +243,18 @@ const AdminPartnerDetailsPage: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
                 <select
-                  name="isPartner"
-                  value={formData.isPartner ? 'true' : 'false'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isPartner: e.target.value === 'true' }))}
+                  name="partnerType"
+                  value={formData.partnerType || 'affiliate'}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    partnerType: e.target.value as 'brand' | 'individual' | 'affiliate',
+                    isPartner: e.target.value !== 'affiliate' 
+                  }))}
                   className="input w-full bg-gray-900/50"
                 >
-                  <option value="true">Brand Partner</option>
-                  <option value="false">Affiliate</option>
+                  <option value="brand">Brand Partner</option>
+                  <option value="individual">Individual Partner</option>
+                  <option value="affiliate">Affiliate</option>
                 </select>
               </div>
               <div>

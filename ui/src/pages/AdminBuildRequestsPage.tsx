@@ -19,7 +19,7 @@ interface BuildRequest {
   usage?: string;
   preferredBrands?: string;
   timeline?: string;
-  status: 'pending' | 'reviewed' | 'contacted' | 'completed';
+  status: 'pending' | 'reviewed' | 'contacted' | 'completed' | 'unbuildable';
   createdAt: string;
 }
 
@@ -45,7 +45,13 @@ const AdminBuildRequestsPage: React.FC = () => {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      await api.put(`/build-requests/${id}`, { status: newStatus });
+      if (newStatus === 'unbuildable') {
+        const reason = window.prompt('Please provide a reason for marking this as unbuildable (will be sent to customer):');
+        if (reason === null) return; // user cancelled
+        await api.put(`/build-requests/${id}`, { status: newStatus, rejectionReason: reason });
+      } else {
+        await api.put(`/build-requests/${id}`, { status: newStatus });
+      }
       fetchRequests();
     } catch (error) {
       console.error('Error updating status', error);
@@ -135,6 +141,7 @@ const AdminBuildRequestsPage: React.FC = () => {
                           request.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
                           request.status === 'reviewed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                           request.status === 'contacted' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                          request.status === 'unbuildable' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                           'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                         }`}
                       >
@@ -142,6 +149,7 @@ const AdminBuildRequestsPage: React.FC = () => {
                         <option value="reviewed" className="bg-gray-900 text-white">Reviewed</option>
                         <option value="contacted" className="bg-gray-900 text-white">Contacted</option>
                         <option value="completed" className="bg-gray-900 text-white">Completed</option>
+                        <option value="unbuildable" className="bg-gray-900 text-white">Unbuildable</option>
                       </select>
                     </td>
                     <td className="py-4 px-6 text-right">

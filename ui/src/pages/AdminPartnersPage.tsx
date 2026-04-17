@@ -47,6 +47,29 @@ const AdminPartnersPage: React.FC = () => {
     }
   };
 
+  const handleReorder = async (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === partners.length - 1)
+    ) return;
+
+    const newPartners = [...partners];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap items
+    [newPartners[index], newPartners[targetIndex]] = [newPartners[targetIndex], newPartners[index]];
+    
+    setPartners(newPartners);
+
+    try {
+      const order = newPartners.map((p, i) => ({ id: p._id, sortOrder: i }));
+      await api.post('/partners/reorder', { order });
+    } catch (error) {
+      console.error('Failed to reorder partners', error);
+      fetchPartners(); // revert on fail
+    }
+  };
+
   const fetchAffiliates = async () => {
     setIsLoadingAffiliates(true);
     try {
@@ -109,7 +132,7 @@ const AdminPartnersPage: React.FC = () => {
                 : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
             }`}
           >
-            Brand Partners
+            Partners
           </button>
           <button
             onClick={() => setActiveTab('affiliates')}
@@ -131,7 +154,9 @@ const AdminPartnersPage: React.FC = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-800 bg-gray-900/50">
+                  <th className="py-3 px-4 text-left text-gray-400 font-medium">Order</th>
                   <th className="py-3 px-4 text-left text-gray-400 font-medium">Partner Name</th>
+                  <th className="py-3 px-4 text-left text-gray-400 font-medium">Type</th>
                   <th className="py-3 px-4 text-left text-gray-400 font-medium">Website</th>
                   <th className="py-3 px-4 text-left text-gray-400 font-medium">Status</th>
                   <th className="py-3 px-4 text-right text-gray-400 font-medium">Actions</th>
@@ -139,17 +164,48 @@ const AdminPartnersPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {isLoadingPartners ? (
-                  <tr><td colSpan={4} className="p-6 text-center text-gray-500">Loading partners...</td></tr>
+                  <tr><td colSpan={6} className="p-6 text-center text-gray-500">Loading partners...</td></tr>
                 ) : partners.length === 0 ? (
-                  <tr><td colSpan={4} className="p-6 text-center text-gray-500">No partners found</td></tr>
+                  <tr><td colSpan={6} className="p-6 text-center text-gray-500">No partners found</td></tr>
                 ) : (
-                  partners.map(p => (
+                  partners.map((p, index) => (
                     <tr key={p._id} className="hover:bg-gray-800/30">
-                      <td className="py-3 px-4 text-white font-medium flex items-center space-x-3">
-                        <img src={p.logo} alt={p.name} className="w-8 h-8 object-contain bg-white rounded p-1" />
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col space-y-1 w-6">
+                          <button
+                            onClick={() => handleReorder(index, 'up')}
+                            disabled={index === 0}
+                            className={`p-1 rounded flex items-center justify-center transition-colors ${index === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleReorder(index, 'down')}
+                            disabled={index === partners.length - 1}
+                            className={`p-1 rounded flex items-center justify-center transition-colors ${index === partners.length - 1 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-white font-medium flex items-center space-x-3 mt-1.5">
+                        {p.logo ? (
+                          <img src={p.logo} alt={p.name} className="w-8 h-8 object-contain bg-white rounded p-1" />
+                        ) : (
+                          <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-xs font-bold text-gray-400">
+                            {p.name.charAt(0)}
+                          </div>
+                        )}
                         <Link to={`/admin/partners/${p._id}`} className="hover:text-emerald-400 transition-colors">
                           {p.name}
                         </Link>
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 text-sm capitalize">
+                        {(p as any).partnerType || (p.isActive ? 'partner' : 'affiliate')}
                       </td>
                       <td className="py-3 px-4 text-emerald-400 text-sm">
                         {p.website ? (

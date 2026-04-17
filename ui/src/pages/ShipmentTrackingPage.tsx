@@ -34,9 +34,9 @@ const ShipmentTrackingPage: React.FC = () => {
           return;
         }
 
-        let carrier = order.carrier ? order.carrier.toLowerCase() : 'shippo';
+        let carrier = order.carrier ? order.carrier.toLowerCase() : 'ups';
         if (carrier === 'unknown' || carrier === '') {
-          carrier = 'shippo';
+          carrier = 'ups';
         }
         
         // Fetch tracking info from our backend
@@ -118,7 +118,7 @@ const ShipmentTrackingPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <span className="order-id-label" style={{ marginRight: '0.5rem' }}>Tracking Number:</span>
               {(() => {
-                const carrierName = trackingData?.carrier || orderData?.carrier || '';
+                const carrierName = trackingData?.carrier || orderData?.carrier || 'ups';
                 const trackingNum = trackingData?.trackingNumber || trackingData?.tracking_number || orderData?.trackingNumber;
                 
                 if (carrierName.toLowerCase() === 'ups') {
@@ -140,11 +140,11 @@ const ShipmentTrackingPage: React.FC = () => {
                 );
               })()}
             </div>
-            {(trackingData?.carrier || orderData?.carrier) && (
+            {(trackingData?.carrier || orderData?.carrier || true) && (
               <div>
                 <span className="order-id-label">Carrier:</span>
                 <span className="order-id-value" style={{ textTransform: 'uppercase' }}>
-                  {trackingData?.carrier || orderData?.carrier}
+                  {trackingData?.carrier || orderData?.carrier || 'UPS'}
                 </span>
               </div>
             )}

@@ -76,10 +76,7 @@ const Footer: React.FC = () => {
   ].filter(col => col.links.length > 0);
 
   const socialLinks = [
-    { icon: faTwitter, label: 'Twitter', url: 'https://twitter.com/lanforge' },
-    { icon: faDiscord, label: 'Discord', url: 'https://discord.gg/lanforge' },
-    { icon: faYoutube, label: 'YouTube', url: 'https://youtube.com/lanforge' },
-    { icon: faInstagram, label: 'Instagram', url: 'https://instagram.com/lanforge' }
+    { icon: faTwitter, label: 'Twitter', url: 'https://twitter.com/lanforge' }
   ];
 
   return (
@@ -184,7 +181,7 @@ const Footer: React.FC = () => {
         <div className="py-4 sm:py-6 border-t border-gray-800/50 w-full">
           <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm w-full">
             <div className="text-gray-500 text-center md:text-left">
-              © {new Date().getFullYear()} {businessInfo?.storeName || 'LANForge'} PC Builders. All rights reserved.
+              © {new Date().getFullYear()} {businessInfo?.storeName || 'LANForge'}. All rights reserved.
             </div>
             
             <div className="flex items-center flex-wrap justify-center gap-3 sm:gap-4 md:gap-6">

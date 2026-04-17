@@ -16,10 +16,11 @@ export interface IPartner extends Document {
   creatorCode: string; // e.g. 'LANFORGE10'
   commissionRate: number; // e.g. 5 for 5%
   isPartner: boolean; // true = Partner, false = Affiliate
+  partnerType: 'brand' | 'individual' | 'affiliate';
   
   // Profile
   website?: string;
-  logo?: string;
+  logo?: string; // Also used as profile picture for individuals
   description?: string;
 
   // Customer Discount (if any)
@@ -54,6 +55,7 @@ const PartnerSchema = new Schema<IPartner>(
     creatorCode: { type: String, required: true, unique: true, uppercase: true },
     commissionRate: { type: Number, default: 5 },
     isPartner: { type: Boolean, default: false },
+    partnerType: { type: String, enum: ['brand', 'individual', 'affiliate'], default: 'affiliate' },
 
     customerDiscountType: { type: String, enum: ['percentage', 'fixed', 'free_shipping'] },
     customerDiscountValue: { type: Number, min: 0 },
